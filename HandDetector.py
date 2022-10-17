@@ -163,6 +163,56 @@ class HandDetector():
         return fingers
     
 
+    def is_hand_open(self):
+        print(self.list_open_fingers())
+        if all(item == 0 for item in  self.list_open_fingers()[1:]): 
+            return False 
+        else: 
+            return True
+
+
+    def is_thumb_open(self):
+        """_summary_: checks whether the thumb is open or closed
+
+        Returns:
+            Bool: if the thumb is open, returns True - False otherwise
+        """
+        return True if  self.list_open_fingers()[0] == 1 else False 
+
+
+    def is_index_finger_open(self):
+        """_summary_: checks whether the index finger is open or closed
+
+        Returns:
+            Bool: if the index finger is open, returns True - False otherwise
+        """
+        return True if self.list_open_fingers()[1] == 1 else False
+    
+    def is_middle_finger_open(self):
+        """_summary_: checks whether the middle finger is open or closed
+
+        Returns:
+            Bool: if the middle finger is open, returns True - False otherwise
+        """
+        return True if self.list_open_fingers()[2] == 1 else False
+
+    
+    def is_ring_finger_open(self):
+        """_summary_: checks whether the ring finger is open or closed
+
+        Returns:
+            Bool: if the ring finger is open, returns True - False otherwise
+        """
+        return True if self.list_open_fingers()[3] == 1 else False
+
+    def is_little_finger_open(self):
+        """_summary_: checks whether the little finger is open or closed
+
+        Returns:
+            Bool: if the little finger is open, returns True - False otherwise
+        """
+        return True if self.list_open_fingers()[1] == 1 else False
+
 
     def find_distance_between_landmarks(self, landmark1, landmark2, img, draw=True,radius=15, thickness=3):
         """
@@ -209,11 +259,19 @@ def main():
     detector = HandDetector(1)
     while True:
         success, img = cap.read()
-        print(type(img))
+        #print(type(img))
         img = detector.find_hands(img= img)
         lmList, bbox = detector.find_landmarks_pos(img)
         if len(lmList) != 0:
-            print(lmList[4])
+            if detector.is_hand_open():
+                print("Hand Open")
+            else: 
+                print("Hand Closed")
+            # #print(lmList[4])
+            # if detector.is_index_finger_open(): 
+            #     print("Index - Open")
+            # else:
+            #     print("Index - Closed")
  
         cTime = time.time()
         fps = 1 / (cTime - pTime)
