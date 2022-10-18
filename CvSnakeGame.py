@@ -2,7 +2,8 @@
 import random as ran
 import cv2
 from HandDetector import *
-from time import sleep
+from CONSTS import *
+
 
 class Snake:
     def __init__(self) -> None:
@@ -19,7 +20,7 @@ class Snake:
         self.font = cv2.FONT_HERSHEY_SIMPLEX
 
     def randomizeFood(self):
-        self.foodx, self.foody = ran.randint(100,1100), ran.randint(100,600)
+        self.foodx, self.foody = ran.randint(100, abs(WIDTH - 200)), ran.randint(100,abs(HEIGHT - 300))
         if (self.foodx, self.foody) in self.points:
             self.randomizeFood()
 
@@ -37,9 +38,9 @@ class Snake:
         cv2.rectangle(imgMain, (self.foodx, self.foody), (self.foodx+40, self.foody+40), (0,255,255), cv2.FILLED)
 
         
-        print("## fingerX, fingerY: " + str(cx) + ", " + str(cy))
-        print("## foodx, foody:" + str(self.foodx)+ ", " + str(self.foody))
-        print(self.points)
+        ##print("## fingerX, fingerY: " + str(cx) + ", " + str(cy))
+        ##print("## foodx, foody:" + str(self.foodx)+ ", " + str(self.foody))
+        ##print(self.points)
 
 
         ##length reduction 
@@ -67,6 +68,6 @@ class Snake:
 
         
         #display text
-        imgMain  = cv2.putText(imgMain, f'SCORE: {self.score}', (10, 690), self.font, 1, (0,255,0), 2, cv2.LINE_AA)
+        imgMain  = cv2.putText(imgMain, f'SCORE: {self.score}', (50, 50), self.font, 1, (0,255,0), 2, cv2.LINE_AA)
 
         return imgMain
