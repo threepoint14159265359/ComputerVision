@@ -211,7 +211,7 @@ class HandDetector():
         Returns:
             Bool: if the little finger is open, returns True - False otherwise
         """
-        return True if self.list_open_fingers()[1] == 1 else False
+        return True if self.list_open_fingers()[4] == 1 else False
 
 
     def find_distance_between_landmarks(self, landmark1, landmark2, img, draw=True,radius=15, thickness=3):
