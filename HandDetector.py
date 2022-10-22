@@ -1,3 +1,7 @@
+from calendar import c
+from operator import index
+from os import preadv
+from syslog import LOG_MAIL
 import cv2
 import mediapipe as mp
 import time
@@ -25,7 +29,8 @@ class HandDetector():
         self.hands = self.mpHands.Hands(self.mode, self.maxHands, self.detectionCon, self.trackCon)
         self.mpDraw = mp.solutions.drawing_utils
         self.tipIds = [4, 8, 12, 16, 20] ### tip of all the five fingers in media-pipe specification
-
+        self.bounding_box = None
+        self.previous_frame_index_finger = 0,0
 
     def get_thumb_landmark(self):
         """_summary_: getter for thumb landmark - easy access
@@ -116,7 +121,7 @@ class HandDetector():
 
         x_coordinates = []
         y_coordinates = []
-        bounding_box = [] #rectangle to encapsulate the hand-landmarks
+        self.bounding_box = [] #rectangle to encapsulate the hand-landmarks
         self.landmark_list = []
         if self.results.multi_hand_landmarks:
             myHand = self.results.multi_hand_landmarks[handNo]
@@ -131,12 +136,12 @@ class HandDetector():
  
             xmin, xmax = min(x_coordinates), max(x_coordinates)
             ymin, ymax = min(y_coordinates), max(y_coordinates)
-            bounding_box = xmin, ymin, xmax, ymax
+            self.bounding_box = xmin, ymin, xmax, ymax
  
             if draw:
                 cv2.rectangle(img, (xmin - 20, ymin - 20), (xmax + 20, ymax + 20),
                               (0, 255, 0), 2)
-        return self.landmark_list, bounding_box
+        return self.landmark_list, self.bounding_box
 
 
     def list_open_fingers(self):
@@ -165,7 +170,7 @@ class HandDetector():
 
     def is_hand_open(self):
         print(self.list_open_fingers())
-        if all(item == 0 for item in  self.list_open_fingers()[1:]): 
+        if all(item == 0 for item in self.list_open_fingers()[1:]): 
             return False 
         else: 
             return True
@@ -246,6 +251,27 @@ class HandDetector():
             cv2.circle(img, (mid_point_x, mind_point_y), radius, (0, 0, 255), cv2.FILLED)
         length = math.hypot(x2 - x1, y2 - y1)
         return length, img, coordinate_info
+
+
+    def get_hand_motion_direction(self, img):
+        index_finger = self.get_index_finger_landmark()
+        if index_finger:
+            current_pos = index_finger
+            #print(f"Prvious: {self.previous_frame_index_finger} + Current: {current_pos}")
+            x, y = self.previous_frame_index_finger        
+            self.previous_frame_index_finger = current_pos
+            error_margin = 50
+            cv2.circle(img, (index_finger[0],index_finger[1]),  error_margin, (0, 0, 255))
+            # direction to the right
+            if current_pos[0] > x + error_margin: 
+                return "right"
+            elif current_pos[0] < x - error_margin:  ## direction to the left
+                return "left"
+            elif current_pos[1] > y + error_margin:
+                return "down"
+            elif current_pos[1] < y - error_margin: 
+                return "up" 
+                
  
  
 def main():
@@ -256,17 +282,18 @@ def main():
     pTime = 0
     cTime = 0
     cap = cv2.VideoCapture(0)
-    detector = HandDetector(1)
+    detector = HandDetector(maxHands=1)
     while True:
         success, img = cap.read()
+        img = cv2.flip(img,1)
         #print(type(img))
         img = detector.find_hands(img= img)
         lmList, bbox = detector.find_landmarks_pos(img)
-        if len(lmList) != 0:
-            if detector.is_hand_open():
-                print("Hand Open")
-            else: 
-                print("Hand Closed")
+        # if len(lmList) != 0:
+        #     if detector.is_hand_open():
+        #         print("Hand Open")
+        #     else: 
+        #         print("Hand Closed")
             # #print(lmList[4])
             # if detector.is_index_finger_open(): 
             #     print("Index - Open")
@@ -276,7 +303,12 @@ def main():
         cTime = time.time()
         fps = 1 / (cTime - pTime)
         pTime = cTime
- 
+    
+        ## decided on direction
+        detector.get_hand_motion_direction(img)
+
+
+
         cv2.putText(img, str(int(fps)), (10, 70), cv2.FONT_HERSHEY_PLAIN, 3,
                     (255, 0, 255), 3)
  
