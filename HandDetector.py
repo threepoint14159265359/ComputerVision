@@ -1,7 +1,4 @@
-from calendar import c
-from operator import index
-from os import preadv
-from syslog import LOG_MAIL
+from enum import Enum
 import cv2
 import mediapipe as mp
 import time
@@ -19,7 +16,16 @@ provides bounding box info of the hand found.
 """
 
 
+
 class HandDetector():
+
+    class DIRECTION(Enum):
+        UP = 1
+        DOWN = 2
+        RIGHT = 3
+        LEFT = 4
+
+
     def __init__(self, mode=False, maxHands=2, detectionCon=0.5, trackCon=0.5):
         self.mode = mode
         self.maxHands = maxHands
@@ -154,27 +160,33 @@ class HandDetector():
         """
         fingers = []
         # Thumb Detection
-        if self.landmark_list[self.tipIds[0]][1] > self.landmark_list[self.tipIds[0] - 1][1]:
+    
+        if self.landmark_list[self.tipIds[0]][1] < self.landmark_list[self.tipIds[0] - 2][1]:
             fingers.append(1)
         else:
             fingers.append(0)
- 
+
         # Other Fingers Detection
         for tip_index in range(1, 5):
-            if self.landmark_list[self.tipIds[tip_index]][2] < self.landmark_list[self.tipIds[tip_index] - 2][2]:
+            if self.landmark_list[self.tipIds[tip_index]][2] < self.landmark_list[self.tipIds[tip_index] - 6][2]:
                 fingers.append(1)
             else:
-                fingers.append(0)
+                    fingers.append(0)
         return fingers
     
 
     def is_hand_open(self):
-        print(self.list_open_fingers())
-        if all(item == 0 for item in self.list_open_fingers()[1:]): 
-            return False 
-        else: 
-            return True
+        for x in self.list_open_fingers(): 
+            if x == 0: 
+                return False
+        return True
 
+
+    def is_hand_complete_fist(self):
+        for x in self.list_open_fingers(): 
+            if x == 1: 
+                return False
+        return True
 
     def is_thumb_open(self):
         """_summary_: checks whether the thumb is open or closed
@@ -254,24 +266,32 @@ class HandDetector():
 
 
     def get_hand_motion_direction(self, img):
-        index_finger = self.get_index_finger_landmark()
-        if index_finger:
-            current_pos = index_finger
+
+        middle_finger = self.get_index_finger_landmark()
+        if middle_finger:
+            current_pos = middle_finger
             #print(f"Prvious: {self.previous_frame_index_finger} + Current: {current_pos}")
             x, y = self.previous_frame_index_finger        
             self.previous_frame_index_finger = current_pos
-            error_margin = 50
-            cv2.circle(img, (index_finger[0],index_finger[1]),  error_margin, (0, 0, 255))
-            # direction to the right
-            if current_pos[0] > x + error_margin: 
-                return "right"
-            elif current_pos[0] < x - error_margin:  ## direction to the left
-                return "left"
-            elif current_pos[1] > y + error_margin:
-                return "down"
-            elif current_pos[1] < y - error_margin: 
-                return "up" 
-                
+            error_margin = 25
+            cv2.circle(img, (middle_finger[0],middle_finger[1]),  error_margin, (0, 0, 255))
+
+            ## check if the new points to which our hand has moved is better moved more on x-axis or y-axis?   
+            dx = abs(current_pos[0] - x)
+            dy = abs(current_pos[1] - y)
+
+            ## if it has moved more on x-axis, check the error_margin for x-axis 
+            if dx > dy:
+                if current_pos[0] > x + error_margin: 
+                    return HandDetector.DIRECTION.RIGHT
+                elif current_pos[0] < (x - error_margin):
+                    return HandDetector.DIRECTION.LEFT
+            else: 
+                if current_pos[1] > (y + error_margin):
+                    return HandDetector.DIRECTION.DOWN
+                elif current_pos[1] < (y - (error_margin - 5)): 
+                    return HandDetector.DIRECTION.UP 
+               
  
  
 def main():

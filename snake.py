@@ -1,12 +1,27 @@
 import pygame,sys,random
+import pygame.gfxdraw
 from pygame.math import Vector2
 from HandDetector import * 
+import time
+
+## some globals
+pygame.mixer.pre_init(44100,-16,2,512)
+pygame.init()
+cell_size = 40
+cell_number = 20
+screen = pygame.display.set_mode((cell_number * cell_size,cell_number * cell_size))
+clock = pygame.time.Clock()
+apple = pygame.image.load('Graphics/apple.png').convert_alpha()
+game_font = pygame.font.Font('Font/PoetsenOne-Regular.ttf', 25)
+game_window_font = pygame.font.SysFont('sans', 15)
+
 
 class SNAKE:
 	def __init__(self):
 		self.body = [Vector2(5,10),Vector2(4,10),Vector2(3,10)]
 		self.direction = Vector2(0,0)
 		self.new_block = False
+		self.pause = False
 
 		self.head_up = pygame.image.load('Graphics/head_up.png').convert_alpha()
 		self.head_down = pygame.image.load('Graphics/head_down.png').convert_alpha()
@@ -72,15 +87,19 @@ class SNAKE:
 		elif tail_relation == Vector2(0,-1): self.tail = self.tail_down
 
 	def move_snake(self):
-		if self.new_block == True:
-			body_copy = self.body[:]
-			body_copy.insert(0,body_copy[0] + self.direction)
-			self.body = body_copy[:]
-			self.new_block = False
-		else:
-			body_copy = self.body[:-1]
-			body_copy.insert(0,body_copy[0] + self.direction)
-			self.body = body_copy[:]
+		if not(self.pause):
+			if self.new_block == True:
+				body_copy = self.body[:]
+				body_copy.insert(0,body_copy[0] + self.direction)
+				self.body = body_copy[:]
+				self.new_block = False
+			else:
+				body_copy = self.body[:-1]
+				body_copy.insert(0,body_copy[0] + self.direction)
+				self.body = body_copy[:]
+
+	def pause_snake(self):
+		self.pause = True		
 
 	def add_block(self):
 		self.new_block = True
@@ -107,21 +126,34 @@ class FRUIT:
 		self.y = random.randint(0,cell_number - 1)
 		self.pos = Vector2(self.x,self.y)
 
+
 class MAIN:
 	def __init__(self):
 		self.snake = SNAKE()
 		self.fruit = FRUIT()
+		self.game_paused = False
+		self.snake_speed_illusion = 0
+
+		self.close_window_icon = pygame.image.load('Graphics/close_window_icon.png').convert_alpha()
+		# self.head_down = pygame.image.load('Graphics/head_down.png').convert_alpha()
+		# self.head_right = pygame.image.load('Graphics/head_right.png').convert_alpha()
+		# self.head_left = pygame.image.load('Graphics/head_left.png').convert_alpha()
 
 	def update(self):
-		self.snake.move_snake()
+		if self.snake_speed_illusion >= 2: 
+			self.snake.move_snake()
+			self.snake_speed_illusion = 0
 		self.check_collision()
 		self.check_fail()
+		self.check_puased()
 
 	def draw_elements(self):
 		self.draw_grass()
-		self.fruit.draw_fruit()
-		self.snake.draw_snake()
-		self.draw_score()
+		if not(self.game_paused): 
+			self.fruit.draw_fruit()
+			self.snake.draw_snake()
+			self.draw_score()
+		self.snake_speed_illusion += 1
 
 	def check_collision(self):
 		if self.fruit.pos == self.snake.body[0]:
@@ -143,6 +175,45 @@ class MAIN:
 		
 	def game_over(self):
 		self.snake.reset()
+	
+
+	def check_puased(self):
+		if self.game_paused: 
+			self.snake.pause_snake()
+			self.draw_paused_menu()
+
+	def draw_paused_menu(self):
+		window_text = "Game Paused"
+		text_surface = game_window_font.render(window_text,True,(200,200,200))
+		background_rect = pygame.Rect(9 * int((cell_size/2)), 9 * int((cell_size)/2), 11 * cell_size, 11 * cell_size)
+		# draw greenish background for the window
+		pygame.draw.rect(screen, (155,209,61), background_rect) 
+		# draw black border for the window 
+		pygame.draw.rect(screen, (56,74,12), background_rect, width = 1, \
+						border_top_left_radius=10, border_top_right_radius=10) 
+		# draw black top panel for the window
+		pygame.draw.rect(screen, (56,74,12), (9 * int((cell_size/2)),  
+						9 *	int((cell_size/2)), 11 * cell_size, 28), \
+						border_top_left_radius=10, border_top_right_radius=10)
+		# draw the window_close icon on the top right corner of the panel
+		screen.blit(self.close_window_icon, (29.5 * int(cell_size/2) + 2, 9 * int(cell_size/2) + 3))
+		# draw the 'game paused' text on the top left of the panel
+		screen.blit(text_surface, (9 * int((cell_size/2)) + 7, 9 * int((cell_size)/2) + 8))
+		# draw the score and high score on the window
+		score_text = str(len(self.snake.body) - 3)
+		# apple image 
+		temp_apple = pygame.transform.scale(apple, (1.5 * cell_size, 1.5 * cell_size) )
+		# draw the apple
+		screen.blit(apple, (12 * int((cell_size/2)), 12 * int((cell_size/2)) ))
+
+
+
+		#TODO: so far, we have done---> when we make a fist, and the game is paused, the snake is paused as well
+		       ## display some simple rectagle that shows three buttons: continue, Change Speed, Quit 
+			   ## the button on clicks would be handled by the game clicker_simulator.py
+			   ## display game puased
+			   ## display current and high scores
+		       ## minimalistic design
 
 	def draw_grass(self):
 		grass_color = (167,209,61)
@@ -166,23 +237,10 @@ class MAIN:
 		score_rect = score_surface.get_rect(center = (score_x,score_y))
 		apple_rect = apple.get_rect(midright = (score_rect.left,score_rect.centery))
 		bg_rect = pygame.Rect(apple_rect.left,apple_rect.top,apple_rect.width + score_rect.width + 6,apple_rect.height)
-
 		pygame.draw.rect(screen,(167,209,61),bg_rect)
 		screen.blit(score_surface,score_rect)
 		screen.blit(apple,apple_rect)
 		pygame.draw.rect(screen,(56,74,12),bg_rect,2)
-
-pygame.mixer.pre_init(44100,-16,2,512)
-pygame.init()
-cell_size = 40
-cell_number = 20
-screen = pygame.display.set_mode((cell_number * cell_size,cell_number * cell_size))
-clock = pygame.time.Clock()
-apple = pygame.image.load('Graphics/apple.png').convert_alpha()
-game_font = pygame.font.Font('Font/PoetsenOne-Regular.ttf', 25)
-
-SCREEN_UPDATE = pygame.USEREVENT
-pygame.time.set_timer(SCREEN_UPDATE,150)
 
 
 
@@ -190,45 +248,62 @@ pygame.time.set_timer(SCREEN_UPDATE,150)
 cap = cv2.VideoCapture(0)
 cap.set(3, 800)
 cap.set(4, 800)
-### CV2 elements
 
 ## hand detection 
-hand_detector = HandDetector(detectionCon=0.8, maxHands=1)
-
-
-
+hand_detector = HandDetector(detectionCon=0.1, maxHands=1)
 main_game = MAIN()
+
+
 while True:
+
+	# fill the screen with green color 
+	screen.fill((175,215,70)) 
+
+	# read frames from the camera 
 	_, img = cap.read() 
 	img.flags.writeable = False 
+	# flip the image at each frame
 	img = cv2.flip(img,1)
+	# detect hands on each frame
 	img = hand_detector.find_hands(img, draw = False) 
-	lmlist = hand_detector.find_landmarks_pos(img, draw=False)
-	direction = hand_detector.get_hand_motion_direction(img)
-    
+	# read landmark list
+	lmlist, _ = hand_detector.find_landmarks_pos(img, draw=False)	
 	
+	# read the driection of hand motoin from hand_detector
+	direction = hand_detector.get_hand_motion_direction(img)
+
+	# decide snake direction
+	if direction == HandDetector.DIRECTION.UP:
+		if main_game.snake.direction.y != 1:
+			main_game.snake.direction = Vector2(0,-1)
+	elif direction == HandDetector.DIRECTION.RIGHT:
+		if main_game.snake.direction.x != -1:
+			main_game.snake.direction = Vector2(1,0)
+	elif direction == HandDetector.DIRECTION.DOWN:
+		if main_game.snake.direction.y != -1:
+			main_game.snake.direction = Vector2(0,1)	
+	elif direction == HandDetector.DIRECTION.LEFT:
+		if main_game.snake.direction.x != 1:
+			main_game.snake.direction = Vector2(-1,0)
+	
+	# check pygame events
 	for event in pygame.event.get():
 		if event.type == pygame.QUIT:
 			pygame.quit()
 			sys.exit()
-		if event.type == SCREEN_UPDATE:
-			main_game.update()
+		# if event.type == SCREEN_UPDATE:
+		# 	main_game.update()
 	
-	if direction == "up":
-		if main_game.snake.direction.y != 1:
-			main_game.snake.direction = Vector2(0,-1)
-	if direction == "right":
-		if main_game.snake.direction.x != -1:
-			main_game.snake.direction = Vector2(1,0)
-	if direction == "down":
-		if main_game.snake.direction.y != -1:
-			main_game.snake.direction = Vector2(0,1)
-	if direction == "left":
-		if main_game.snake.direction.x != 1:
-			main_game.snake.direction = Vector2(-1,0)
-			
-
-	screen.fill((175,215,70))
+	# check if the game is puased -- if the index finger is closed, the game is puased
+	if len(lmlist) != 0: 
+	 	if  not(hand_detector.is_index_finger_open()): 
+	 		main_game.game_paused = True
+	
+	# draw game elements and update the game
 	main_game.draw_elements()
+	main_game.update()
+
+	# update pygame
 	pygame.display.update()
+	# set fps
 	clock.tick(60)
