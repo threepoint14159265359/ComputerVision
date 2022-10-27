@@ -1,3 +1,4 @@
+from re import S
 import pygame,sys,random
 import pygame.gfxdraw
 from pygame.math import Vector2
@@ -11,9 +12,17 @@ cell_size = 40
 cell_number = 20
 screen = pygame.display.set_mode((cell_number * cell_size,cell_number * cell_size))
 clock = pygame.time.Clock()
-apple = pygame.image.load('Graphics/apple.png').convert_alpha()
-game_font = pygame.font.Font('Font/PoetsenOne-Regular.ttf', 25)
+apple1 =  pygame.transform.scale(pygame.image.load('Graphics/apple.png').convert_alpha() , (40, 40)) 
+apple2 =  pygame.transform.scale(pygame.image.load('Graphics/apple1.png').convert_alpha() , (60, 60))
+trophy1 = pygame.transform.scale(pygame.image.load('Graphics/trophy.png').convert_alpha() , (35, 32))
+trophy2 = pygame.transform.scale(pygame.image.load('Graphics/trophy.png').convert_alpha() , (60, 60))  
+home_icon = pygame.transform.scale(pygame.image.load('Graphics/home_icon.png').convert_alpha(), (55, 55))
+quit_icon = pygame.transform.scale(pygame.image.load('Graphics/quit_icon.png').convert_alpha(), (45, 45))
+game_font =  pygame.font.Font('Font/PoetsenOne-Regular.ttf', 25)
+game_font1 =  pygame.font.Font('Font/PoetsenOne-Regular.ttf', 40)
 game_window_font = pygame.font.SysFont('sans', 15)
+
+
 
 
 class SNAKE:
@@ -118,8 +127,7 @@ class FRUIT:
 
 	def draw_fruit(self):
 		fruit_rect = pygame.Rect(int(self.pos.x * cell_size),int(self.pos.y * cell_size),cell_size,cell_size)
-		screen.blit(apple,fruit_rect)
-		#pygame.draw.rect(screen,(126,166,114),fruit_rect)
+		screen.blit(apple1,fruit_rect)
 
 	def randomize(self):
 		self.x = random.randint(0,cell_number - 1)
@@ -133,11 +141,9 @@ class MAIN:
 		self.fruit = FRUIT()
 		self.game_paused = False
 		self.snake_speed_illusion = 0
+		self.high_score = 0
 
 		self.close_window_icon = pygame.image.load('Graphics/close_window_icon.png').convert_alpha()
-		# self.head_down = pygame.image.load('Graphics/head_down.png').convert_alpha()
-		# self.head_right = pygame.image.load('Graphics/head_right.png').convert_alpha()
-		# self.head_left = pygame.image.load('Graphics/head_left.png').convert_alpha()
 
 	def update(self):
 		if self.snake_speed_illusion >= 2: 
@@ -146,6 +152,12 @@ class MAIN:
 		self.check_collision()
 		self.check_fail()
 		self.check_puased()
+		self.update_highscore()
+
+	def update_highscore(self):
+		cscore = len(self.snake.body) - 3
+		if self.high_score <= cscore:
+			self.high_score = cscore
 
 	def draw_elements(self):
 		self.draw_grass()
@@ -153,6 +165,7 @@ class MAIN:
 			self.fruit.draw_fruit()
 			self.snake.draw_snake()
 			self.draw_score()
+			self.draw_highscore()
 		self.snake_speed_illusion += 1
 
 	def check_collision(self):
@@ -176,7 +189,6 @@ class MAIN:
 	def game_over(self):
 		self.snake.reset()
 	
-
 	def check_puased(self):
 		if self.game_paused: 
 			self.snake.pause_snake()
@@ -185,6 +197,8 @@ class MAIN:
 	def draw_paused_menu(self):
 		window_text = "Game Paused"
 		text_surface = game_window_font.render(window_text,True,(200,200,200))
+		x, y = 9 * int((cell_size/2)), 9 * int((cell_size/2))
+		w, h = 11 * cell_size, 11 * cell_size
 		background_rect = pygame.Rect(9 * int((cell_size/2)), 9 * int((cell_size)/2), 11 * cell_size, 11 * cell_size)
 		# draw greenish background for the window
 		pygame.draw.rect(screen, (155,209,61), background_rect) 
@@ -201,19 +215,35 @@ class MAIN:
 		screen.blit(text_surface, (9 * int((cell_size/2)) + 7, 9 * int((cell_size)/2) + 8))
 		# draw the score and high score on the window
 		score_text = str(len(self.snake.body) - 3)
-		# apple image 
-		temp_apple = pygame.transform.scale(apple, (1.5 * cell_size, 1.5 * cell_size) )
-		# draw the apple
-		screen.blit(apple, (12 * int((cell_size/2)), 12 * int((cell_size/2)) ))
+		highscore_text = str(self.high_score)
+		score_surface1 = game_font1.render(score_text,True,(56,74,12))
+		score_surface2 = game_font1.render(highscore_text,True,(56,74,12))
+		# draw apple
+		screen.blit(apple2, (x + cell_size, y + int(h/4)))
+		# draw score
+		screen.blit(score_surface1, (x + 3 * cell_size, y  + int(h/4) + 10 ))
+		# draw trophy 
+		screen.blit(trophy2, ((x + int(w/2) + cell_size), (y + int(h/4))))
+		# draw high score
+		screen.blit(score_surface2, ((x + int(w/2) + 3 * cell_size), y + int(h/4) + 10))
+		# draw buttons
+		# draw play button
+		play_rect = pygame.rect.Rect(x + int(w/3) - 18 , (y + h) - 2 * cell_size, int(w/3) + 30 , (2 * cell_size) - 35)
+		pygame.draw.rect(screen,(0,128,255), play_rect, border_radius=15)
+		play = "Play"
+		text_rend_rect = game_font.render(play,True, "white")
+		screen.blit(text_rend_rect, ((play_rect.centerx - 25), (play_rect.centery - 15)))
+		# draw home button
+		screen.blit(home_icon, (x + int(w/3) - 4* cell_number, (y + h) - int(2.12 * cell_size)))
+		# draw quit button
+		screen.blit(quit_icon, ((x + (w - int(w/3)) + cell_number), (y + h) - int(2 * cell_size)) )
+		self.handle_paused_menu_actions()
+
+	def handle_paused_menu_actions(self): 
+		pass
 
 
 
-		#TODO: so far, we have done---> when we make a fist, and the game is paused, the snake is paused as well
-		       ## display some simple rectagle that shows three buttons: continue, Change Speed, Quit 
-			   ## the button on clicks would be handled by the game clicker_simulator.py
-			   ## display game puased
-			   ## display current and high scores
-		       ## minimalistic design
 
 	def draw_grass(self):
 		grass_color = (167,209,61)
@@ -235,12 +265,22 @@ class MAIN:
 		score_x = int(cell_size * cell_number - 60)
 		score_y = int(cell_size * cell_number - 40)
 		score_rect = score_surface.get_rect(center = (score_x,score_y))
-		apple_rect = apple.get_rect(midright = (score_rect.left,score_rect.centery))
+		apple_rect = apple1.get_rect(midright = (score_rect.left,score_rect.centery))
 		bg_rect = pygame.Rect(apple_rect.left,apple_rect.top,apple_rect.width + score_rect.width + 6,apple_rect.height)
 		pygame.draw.rect(screen,(167,209,61),bg_rect)
 		screen.blit(score_surface,score_rect)
-		screen.blit(apple,apple_rect)
+		screen.blit(apple1,apple_rect)
 		pygame.draw.rect(screen,(56,74,12),bg_rect,2)
+
+	def draw_highscore(self):
+		highscore_text = str(self.high_score)
+		score_surface = game_font.render(highscore_text,True,(56,74,12))
+		x, y = int((cell_size*cell_number) - ((3 * cell_size))), 20
+		bg_rect = pygame.rect.Rect(x, y, 2 * cell_size, int( 1.05 * cell_size))
+		pygame.draw.rect(screen,(167,209,61), bg_rect)
+		pygame.draw.rect(screen, (56,74,12), bg_rect, 2) # border
+		screen.blit(trophy1, (x+5, y+5))
+		screen.blit(score_surface, (x + int(1.2 * cell_size) , y+7))
 
 
 
@@ -291,6 +331,10 @@ while True:
 		if event.type == pygame.QUIT:
 			pygame.quit()
 			sys.exit()
+		
+		if main_game.game_paused: 
+			if event.type == pygame.MOUSEBUTTONDOWN:
+				print(pygame.mouse.get_pos()) 
 		# if event.type == SCREEN_UPDATE:
 		# 	main_game.update()
 	
@@ -306,4 +350,4 @@ while True:
 	# update pygame
 	pygame.display.update()
 	# set fps
-	clock.tick(60)
+	clock.tick(120)
