@@ -38,6 +38,7 @@ class HandDetector():
         self.bounding_box = None
         self.previous_frame_index_finger = 0,0
 
+
     def get_thumb_landmark(self):
         """_summary_: getter for thumb landmark - easy access
         Returns:
@@ -47,7 +48,7 @@ class HandDetector():
             return self.landmark_list[self.tipIds[0]][1:]
 
     def get_index_finger_landmark(self):
-        """_summary_: getter for index finger landmark - easy access
+        """_summary_: getter for index finger landmark - easy accessprevious_frame_index_finger
         Returns:
             list (int): coordinates of the index finger landmark
         """
@@ -153,14 +154,13 @@ class HandDetector():
     def list_open_fingers(self):
         """
         _summary_: checks wheter fingers are opened or closed
-                   checks every single tip of every single finger and based off of its relative position
+                   checks every single tip of every single finger andreturn True if self.list_open_fingers()[1] == 1 else False based off of its relative position
                    to the second-last landmark of the fingers decide whether its open or closed
         Returns: 
             list: integers list containing either 0 or 1
         """
         fingers = []
         # Thumb Detection
-    
         if self.landmark_list[self.tipIds[0]][1] < self.landmark_list[self.tipIds[0] - 2][1]:
             fingers.append(1)
         else:
@@ -173,7 +173,6 @@ class HandDetector():
             else:
                     fingers.append(0)
         return fingers
-    
 
     def is_hand_open(self):
         for x in self.list_open_fingers(): 
@@ -203,7 +202,12 @@ class HandDetector():
         Returns:
             Bool: if the index finger is open, returns True - False otherwise
         """
-        return True if self.list_open_fingers()[1] == 1 else False
+        if len(self.landmark_list) != 0:
+            _, tip_y = self.landmark_list[8][1:]
+            _, mcp_y = self.landmark_list[5][1:]
+            h_error = 20
+            return True if tip_y - h_error < mcp_y else False
+            
     
     def is_middle_finger_open(self):
         """_summary_: checks whether the middle finger is open or closed
@@ -211,7 +215,11 @@ class HandDetector():
         Returns:
             Bool: if the middle finger is open, returns True - False otherwise
         """
-        return True if self.list_open_fingers()[2] == 1 else False
+        if len(self.landmark_list) != 0:
+            _, tip_y = self.landmark_list[12][1:]
+            _, mcp_y = self.landmark_list[9][1:]
+            h_error = 20
+            return True if tip_y - h_error < mcp_y else False
 
     
     def is_ring_finger_open(self):
@@ -220,7 +228,11 @@ class HandDetector():
         Returns:
             Bool: if the ring finger is open, returns True - False otherwise
         """
-        return True if self.list_open_fingers()[3] == 1 else False
+        if len(self.landmark_list) != 0:
+            _, tip_y = self.landmark_list[16][1:]
+            _, mcp_y = self.landmark_list[13][1:]
+            h_error = 20
+            return True if tip_y - h_error < mcp_y else False
 
     def is_little_finger_open(self):
         """_summary_: checks whether the little finger is open or closed
@@ -228,7 +240,11 @@ class HandDetector():
         Returns:
             Bool: if the little finger is open, returns True - False otherwise
         """
-        return True if self.list_open_fingers()[4] == 1 else False
+        if len(self.landmark_list) != 0:
+            _, tip_y = self.landmark_list[20][1:]
+            _, mcp_y = self.landmark_list[17][1:]
+            h_error = 26
+            return True if tip_y - h_error < mcp_y else False
 
 
     def find_distance_between_landmarks(self, landmark1, landmark2, img, draw=True,radius=15, thickness=3):
@@ -261,36 +277,33 @@ class HandDetector():
             cv2.circle(img, (x1, y1), radius, (255, 0, 255), cv2.FILLED)
             cv2.circle(img, (x2, y2), radius, (255, 0, 255), cv2.FILLED)
             cv2.circle(img, (mid_point_x, mind_point_y), radius, (0, 0, 255), cv2.FILLED)
-        length = math.hypot(x2 - x1, y2 - y1)
+        length = math.sqrt((x2 - x1) * (x2 - x1) + (y2 - y1) * (y2 - y1))
+
+
+
         return length, img, coordinate_info
 
 
     def get_hand_motion_direction(self, img):
+        index_finger = self.get_index_finger_landmark()
+        if index_finger:
+            x, y = self.previous_frame_index_finger
+            self.previous_frame_index_finger = index_finger 
+            error_margin = 15
 
-        middle_finger = self.get_index_finger_landmark()
-        if middle_finger:
-            current_pos = middle_finger
-            #print(f"Prvious: {self.previous_frame_index_finger} + Current: {current_pos}")
-            x, y = self.previous_frame_index_finger        
-            self.previous_frame_index_finger = current_pos
-            error_margin = 25
-            cv2.circle(img, (middle_finger[0],middle_finger[1]),  error_margin, (0, 0, 255))
+            dx = abs(index_finger[0] - x)
+            dy = abs(index_finger[1] - y)
 
-            ## check if the new points to which our hand has moved is better moved more on x-axis or y-axis?   
-            dx = abs(current_pos[0] - x)
-            dy = abs(current_pos[1] - y)
-
-            ## if it has moved more on x-axis, check the error_margin for x-axis 
             if dx > dy:
-                if current_pos[0] > x + error_margin: 
-                    return HandDetector.DIRECTION.RIGHT
-                elif current_pos[0] < (x - error_margin):
+                if index_finger[0] > x + error_margin: 
+                    return HandDetector.DIRECTION.RIGHT 
+                elif index_finger[0] < (x - error_margin):
                     return HandDetector.DIRECTION.LEFT
             else: 
-                if current_pos[1] > (y + error_margin):
+                if index_finger[1] > (y + error_margin):
                     return HandDetector.DIRECTION.DOWN
-                elif current_pos[1] < (y - (error_margin - 5)): 
-                    return HandDetector.DIRECTION.UP 
+                elif index_finger[1] < (y - (error_margin - 5)): 
+                    return HandDetector.DIRECTION.UP
                
  
  
@@ -325,8 +338,8 @@ def main():
         pTime = cTime
     
         ## decided on direction
-        detector.get_hand_motion_direction(img)
-
+        #detector.get_hand_motion_direction(img)
+        print(detector.is_ring_finger_open())
 
 
         cv2.putText(img, str(int(fps)), (10, 70), cv2.FONT_HERSHEY_PLAIN, 3,
