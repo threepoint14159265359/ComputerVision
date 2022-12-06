@@ -14,13 +14,15 @@ import numpy as np
 
 #################################
 ## CV elements
-wCam, hCam = 720,576 # 720, 570 with thirty fps is amazing
+wCam, hCam =  640, 480 # 720, 576 with thirty fps is amazing
 cap = cv2.VideoCapture(0)
-cap.set(3, wCam)
-cap.set(4, hCam)
-cap.set(cv2.CAP_PROP_EXPOSURE, 0.1)
 ################################
+print(cap.get(cv2.CAP_PROP_FRAME_WIDTH), cap.get(cv2.CAP_PROP_FRAME_HEIGHT))
 
+
+
+
+print(autopy.screen.size())
 
 hand_detector = HandDetector(detectionCon=0.1, maxHands=1)
 main_game = SnakeGame()
@@ -47,20 +49,29 @@ def handle_paused_menu(mouse_coords):
     if play_rect.collidepoint(mouse_coords):
         main_game.game_paused = False
     elif quit_rect.collidepoint(mouse_coords) or quit2_rect.collidepoint(mouse_coords):
-        close = input("Are you sure, you wanna quit the game?[y/n] : ")
-        if close == 'y':
-            pygame.quit()
-            sys.exit()
+        # if you wanna display something here where user can be asked whether he wants to quit the game or not, you can display that, but simple is that it quits the game
+        print("QUITING THE GAME")
+        pygame.quit();
+        sys.exit(0)
     elif home_rect.collidepoint(mouse_coords):
         print("HOME MENU DISPLAY")
+
+
+
+#### show only little finger (rest of the hand must be fist) to pause the game
+    #### in pause mode, show only index finger to move the curser
+    #### in pause mode, show only full hand to puase the cursor movements
+    #### in pause mode, pinch the button with thumb and index finger to click a button
+#### show only index finger to move the snake
+
 
 
 def main(): 
     ##################################
     ## mouse related constants
-    frame_reduction = 100
-    smoothening = 12
-    pTime = 0
+    frame_reduction = 30
+    smoothening = 4.5
+    fps = 30
     plocX, plocY = 0, 0
     clocX, clocY = 0, 0
     mouse_screen_width, mouse_screen_height = autopy.screen.size()
@@ -93,35 +104,41 @@ def main():
         # mouse curser handeling
         if len(lmlist) != 0 and mouse_mode:
             index_x, index_y = hand_detector.get_index_finger_landmark()
-            ## movements mode 
+
+            ## movements mode -->> mouse curser will only follow the tip of the index finger
             if hand_detector.is_index_finger_open() \
                 and not(hand_detector.is_little_finger_open())\
                 and not(hand_detector.is_middle_finger_open())\
                 and not(hand_detector.is_ring_finger_open()): 
                 x3 = np.interp(index_x, (frame_reduction, wCam - frame_reduction), (0, mouse_screen_width))
                 y3 = np.interp(index_y, (frame_reduction, hCam - frame_reduction), (0, mouse_screen_height))
-                ## somethen the values for the mous curser to move to
+                ## smoothen the values for the mouse curser to move to
                 clocX = plocX + (x3 - plocX) / smoothening
                 clocY = plocY + (y3 - plocY) / smoothening
                 ## move mouse 
                 autopy.mouse.move(mouse_screen_width - clocX, clocY)
                 plocX, plocY = clocX, clocY
+        
             
-            # ## click mode - on fist
-            if hand_detector.is_hand_complete_fist():  
-                #distance, _, _  = hand_detector.find_distance_between_landmarks(12, 8, img, draw=False)
-                #print(distance)
-                #if distance < 20: # In other words if the are almost touching each other
+            # click mode --> we don't have to check whether the index finger is open or not
+            indexidx, thumbidx = 8, 4
+            distance, _, _  = hand_detector.find_distance_between_landmarks(indexidx , thumbidx, img, draw=False)
+            print(distance)
+            if distance < 15: # In other words if they are almost touching each other
                 print("Clicked");
                 autopy.mouse.click(delay=0.2); 
+
 
         for event in pygame.event.get():
             if event.type == pygame.QUIT: 
                 pygame.quit()
                 sys.exit()
-            if event.type == pygame.MOUSEBUTTONDOWN and main_game.game_paused:
+            elif event.type == pygame.MOUSEBUTTONDOWN and main_game.game_paused:
                 mouse_coords = pygame.mouse.get_pos()
                 handle_paused_menu(mouse_coords=mouse_coords)
+                if not(main_game.game_paused):
+                    autopy.mouse.move(mouse_screen_height - 100, mouse_screen_height - 100)
+                main_game.set_load_time(True)
                 
                 
         
@@ -129,9 +146,11 @@ def main():
         main_game.draw_elements()
         main_game.update()
         
+
+        
         
         pygame.display.update()
-        clock.tick(30)
+        clock.tick(fps)
 
 
 

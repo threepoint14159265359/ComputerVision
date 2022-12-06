@@ -38,6 +38,8 @@ class HandDetector():
         self.bounding_box = None
         self.previous_frame_index_finger = 0,0
 
+    def is_hand_up_side_down():
+        pass
 
     def get_thumb_landmark(self):
         """_summary_: getter for thumb landmark - easy access
@@ -243,7 +245,7 @@ class HandDetector():
         if len(self.landmark_list) != 0:
             _, tip_y = self.landmark_list[20][1:]
             _, mcp_y = self.landmark_list[17][1:]
-            h_error = 26
+            h_error = 10
             return True if tip_y - h_error < mcp_y else False
 
 
@@ -278,8 +280,6 @@ class HandDetector():
             cv2.circle(img, (x2, y2), radius, (255, 0, 255), cv2.FILLED)
             cv2.circle(img, (mid_point_x, mind_point_y), radius, (0, 0, 255), cv2.FILLED)
         length = math.sqrt((x2 - x1) * (x2 - x1) + (y2 - y1) * (y2 - y1))
-
-
 
         return length, img, coordinate_info
 
@@ -322,9 +322,12 @@ def main():
         #print(type(img))
         img = detector.find_hands(img= img)
         lmList, bbox = detector.find_landmarks_pos(img)
-        # if len(lmList) != 0:
-        #     if detector.is_hand_open():
-        #         print("Hand Open")
+        if len(lmList) != 0:
+            if detector.is_little_finger_open():
+                print("little Open")
+            else: 
+                print("little close")
+
         #     else: 
         #         print("Hand Closed")
             # #print(lmList[4])

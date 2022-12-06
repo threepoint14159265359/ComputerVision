@@ -1,6 +1,5 @@
 from Init import *
 import pygame
-import pygame.gfxdraw
 from HandDetector import * 
 from Snake import *
 from Fruit import *
@@ -14,6 +13,7 @@ class SnakeGame:
 		self.snake_speed_illusion = 0
 		self.high_score = 0
 		self.close_window_icon = pygame.image.load('Graphics/close_window_icon.png').convert_alpha()
+		self.load_time = False
 
 	def set_load_time(self, time):
 		self.load_time = time
