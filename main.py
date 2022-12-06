@@ -14,15 +14,10 @@ import numpy as np
 
 #################################
 ## CV elements
-wCam, hCam =  640, 480 # 720, 576 with thirty fps is amazing
 cap = cv2.VideoCapture(0)
+wCam, hCam = cap.get(cv2.CAP_PROP_FRAME_WIDTH), cap.get(cv2.CAP_PROP_FRAME_HEIGHT) # 720, 576 with thirty fps is amazing
 ################################
-print(cap.get(cv2.CAP_PROP_FRAME_WIDTH), cap.get(cv2.CAP_PROP_FRAME_HEIGHT))
 
-
-
-
-print(autopy.screen.size())
 
 hand_detector = HandDetector(detectionCon=0.1, maxHands=1)
 main_game = SnakeGame()
@@ -88,7 +83,6 @@ def main():
         direction= hand_detector.get_hand_motion_direction(img)
         handle_direction(direction=direction)
 
-
         # only if the little finger is open - the game would be paused
         if len(lmlist) != 0 and not(hand_detector.is_index_finger_open()) \
                             and hand_detector.is_little_finger_open()\
@@ -106,6 +100,7 @@ def main():
             index_x, index_y = hand_detector.get_index_finger_landmark()
 
             ## movements mode -->> mouse curser will only follow the tip of the index finger
+            ## the rest of the hand must be closed
             if hand_detector.is_index_finger_open() \
                 and not(hand_detector.is_little_finger_open())\
                 and not(hand_detector.is_middle_finger_open())\
@@ -118,15 +113,16 @@ def main():
                 ## move mouse 
                 autopy.mouse.move(mouse_screen_width - clocX, clocY)
                 plocX, plocY = clocX, clocY
-        
             
-            # click mode --> we don't have to check whether the index finger is open or not
+            # all the fingers except thumb (because it's difficult to calculate) and you have to pinch the button with thumb and index finger
             indexidx, thumbidx = 8, 4
             distance, _, _  = hand_detector.find_distance_between_landmarks(indexidx , thumbidx, img, draw=False)
-            print(distance)
-            if distance < 15: # In other words if they are almost touching each other
-                print("Clicked");
-                autopy.mouse.click(delay=0.2); 
+            if hand_detector.is_index_finger_open() and \
+                hand_detector.is_little_finger_open() and \
+                    hand_detector.is_middle_finger_open and \
+                        hand_detector.is_ring_finger_open() and distance < 15: 
+                autopy.mouse.click(delay=0.2)
+                 
 
 
         for event in pygame.event.get():
@@ -136,11 +132,11 @@ def main():
             elif event.type == pygame.MOUSEBUTTONDOWN and main_game.game_paused:
                 mouse_coords = pygame.mouse.get_pos()
                 handle_paused_menu(mouse_coords=mouse_coords)
+                print(main_game.game_paused)
                 if not(main_game.game_paused):
-                    autopy.mouse.move(mouse_screen_height - 100, mouse_screen_height - 100)
-                main_game.set_load_time(True)
-                
-                
+                    plocX, plocY = mouse_screen_width / 2, 0
+                    autopy.mouse.move(plocX, plocY)
+                    #print(mouse_screen_width - 100, mouse_screen_height - 100)
         
 
         main_game.draw_elements()
