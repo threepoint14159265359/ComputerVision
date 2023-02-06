@@ -13,13 +13,11 @@ class SnakeGame:
 		self.snake_speed_illusion = 0
 		self.high_score = 0
 		self.close_window_icon = pygame.image.load('Graphics/close_window_icon.png').convert_alpha()
-		self.load_time = False
+		self.load_time = True
 
-	def set_load_time(self, time):
-		self.load_time = time
 
 	def update(self):
-		if not(self.game_paused) and self.snake_speed_illusion >= 3: 
+		if not(self.game_paused) and self.snake_speed_illusion >= 4	: 
 			self.snake.move_snake()
 			self.snake_speed_illusion = 0
 		self.check_collision()
@@ -41,7 +39,6 @@ class SnakeGame:
 			self.draw_highscore()
 		self.snake_speed_illusion += 1
 		
-
 	def check_collision(self):
 		if self.fruit.pos == self.snake.body[0]:
 			self.fruit.randomize()
@@ -54,19 +51,24 @@ class SnakeGame:
 
 	def check_fail(self):
 		if not 0 <= self.snake.body[0].x < cell_number or not 0 <= self.snake.body[0].y < cell_number:
+			self.load_time = True
+			time.sleep(0.5)
 			self.game_over()
 
 		for block in self.snake.body[1:]:
 			if block == self.snake.body[0]:
+				self.load_time = True
+				time.sleep(0.5)
 				self.game_over()
 		
 	def game_over(self):
 		self.snake.reset()
+		
+
 	
 	def check_pause(self):
 		if self.game_paused: 
-			self.draw_paused_menu()
-		
+			self.draw_paused_menu()		
 
 	def draw_paused_menu(self):
 		window_text = "Game Paused"
@@ -110,7 +112,7 @@ class SnakeGame:
 		# draw home button
 		screen.blit(home_icon, (x + int(w/3) - 4* cell_number, (y + h) - int(2.12 * cell_size)))
 		# draw quit button
-		screen.blit(quit_icon, ((x + (w - int(w/3)) + cell_number), (y + h) - int(2 * cell_size)) )
+		screen.blit(quit_icon, ((x + (w - int(w/3)) + cell_number), (y + h) - int(2 * cell_size)))
 		
 	def draw_grass(self):
 		grass_color = (167,209,61)

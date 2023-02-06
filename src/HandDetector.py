@@ -289,7 +289,7 @@ class HandDetector():
         if index_finger:
             x, y = self.previous_frame_index_finger
             self.previous_frame_index_finger = index_finger 
-            error_margin = 15
+            error_margin = 18
 
             dx = abs(index_finger[0] - x)
             dy = abs(index_finger[1] - y)
@@ -320,13 +320,13 @@ def main():
         success, img = cap.read()
         img = cv2.flip(img,1)
         #print(type(img))
-        img = detector.find_hands(img= img)
-        lmList, bbox = detector.find_landmarks_pos(img)
-        if len(lmList) != 0:
-            if detector.is_little_finger_open():
-                print("little Open")
-            else: 
-                print("little close")
+        # img = detector.find_hands(img= img)
+        # lmList, bbox = detector.find_landmarks_pos(img)
+        # if len(lmList) != 0:
+        #     if detector.is_little_finger_open():
+        #         print("little Open")
+        #     else: 
+        #         print("little close")
 
         #     else: 
         #         print("Hand Closed")
@@ -335,10 +335,19 @@ def main():
             #     print("Index - Open")
             # else:
             #     print("Index - Closed")
- 
-        cTime = time.time()
-        fps = 1 / (cTime - pTime)
-        pTime = cTime
+    
+
+    # img = detector.find_hands(img= img)
+    #     lmList, bbox = detector.find_landmarks_pos(img)
+    #     if len(lmList) != 0:
+    #         if detector.is_little_finger_open():
+    #             print("little Open")
+    #         else: 
+    #             print("little close")
+
+    #     cTime = time.time()
+    #     fps = 1 / (cTime - pTime)
+    #     pTime = cTime
     
         ## decided on direction
         #detector.get_hand_motion_direction(img)
